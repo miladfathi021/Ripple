@@ -24,6 +24,9 @@
     "bin": [
         "bin/ripple"
     ],
+    "scripts": {
+        "test": "phpunit"
+    },
     "config": {
         "sort-packages": true
     }

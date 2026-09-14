@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Ripple\CLI;
 
-use Ripple\Analysis\ReadinessService;
+use InvalidArgumentException;
+use Ripple\Analysis\AnalysisRunner;
+use Ripple\Reporting\ReportFormatterFactory;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
@@ -17,23 +20,38 @@ use Symfony\Component\Console\Output\OutputInterface;
 final class AnalyzeCommand extends Command
 {
     public function __construct(
-        private readonly ReadinessService $readinessService,
+        private readonly AnalysisRunner $analysisRunner,
+        private readonly ReportFormatterFactory $reportFormatterFactory,
     ) {
         parent::__construct();
     }
 
+    protected function configure(): void
+    {
+        $this->addOption(
+            'format',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Output format (text or json)',
+            'text',
+        );
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if (!$this->readinessService->isReady()) {
-            $output->writeln('<error>Ripple is not ready.</error>');
+        $format = (string) $input->getOption('format');
 
-            return Command::FAILURE;
+        try {
+            $formatter = $this->reportFormatterFactory->forFormat($format);
+        } catch (InvalidArgumentException $exception) {
+            $output->writeln('<error>' . $exception->getMessage() . '</error>');
+
+            return Command::INVALID;
         }
 
-        $output->writeln('🌊 Ripple');
-        $output->writeln('');
-        $output->writeln('Ripple is ready.');
+        $result = $this->analysisRunner->run();
+        $output->writeln($formatter->format($result));
 
-        return Command::SUCCESS;
+        return $result->isSuccessful() ? Command::SUCCESS : Command::FAILURE;
     }
 }

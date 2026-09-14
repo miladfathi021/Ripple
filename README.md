@@ -8,9 +8,9 @@ Code reviews often miss hidden blast radius: a small diff can touch shared symbo
 
 ## Current status
 
-Task 01 — project foundation only.
+Task 02 — CLI foundation.
 
-The CLI boots, dependencies are wired, and the `analyze` command confirms that Ripple is running. AST analysis, dependency graphs, risk detection, AI explanations, and GitHub integration are not implemented yet.
+The `analyze` command accepts `--format=text` or `--format=json` and prints a structured readiness result. AST analysis, dependency graphs, risk detection, AI explanations, and GitHub integration are not implemented yet.
 
 ## Requirements
 
@@ -28,14 +28,25 @@ composer install
 ```bash
 ./bin/ripple --help
 ./bin/ripple analyze
+./bin/ripple analyze --format=text
+./bin/ripple analyze --format=json
 ```
 
-Expected `analyze` output:
+Expected text output (default):
 
 ```text
 🌊 Ripple
 
 Ripple is ready.
+```
+
+Expected JSON output:
+
+```json
+{
+    "status": "ready",
+    "message": "Ripple is ready."
+}
 ```
 
 ### Docker
@@ -51,5 +62,5 @@ docker run --rm ripple analyze
 ## Run tests
 
 ```bash
-./vendor/bin/phpunit
+composer test
 ```
