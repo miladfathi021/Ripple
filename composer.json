@@ -1,0 +1,30 @@
+{
+    "name": "ripple/ripple",
+    "description": "AI-assisted code change impact analyzer",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "nikic/php-parser": "^5.4",
+        "symfony/console": "^7.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ripple\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ripple\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/ripple"
+    ],
+    "config": {
+        "sort-packages": true
+    }
+}

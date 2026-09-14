@@ -1,0 +1,11 @@
+.git
+.gitignore
+.DS_Store
+.phpunit.cache
+.phpunit.result.cache
+tests
+phpunit.xml
+README.md
+vendor
+Dockerfile
+.dockerignore

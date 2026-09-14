@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Ripple\CLI\ApplicationFactory;
+
+$autoload = dirname(__DIR__) . '/vendor/autoload.php';
+
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Composer autoloader not found. Run 'composer install' first.\n");
+    exit(1);
+}
+
+require $autoload;
+
+$application = (new ApplicationFactory())->create();
+$application->run();
