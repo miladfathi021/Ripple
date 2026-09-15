@@ -12,6 +12,8 @@ RUN composer install --no-dev --classmap-authoritative --no-interaction --no-scr
 
 FROM php:8.3-cli-alpine
 
+RUN apk add --no-cache git
+
 WORKDIR /opt/ripple
 
 COPY --from=vendor /opt/ripple /opt/ripple
