@@ -1,0 +1,14 @@
+diff --git a/a.php b/a.php
+index 72943a1..3cab8c9 100644
+--- a/a.php
++++ b/a.php
+@@ -1 +1 @@
+-aaa
++aaa2
+diff --git a/b.php b/b.php
+index f761ec1..c977f04 100644
+--- a/b.php
++++ b/b.php
+@@ -1 +1 @@
+-bbb
++bbb2

@@ -1,0 +1,10 @@
+diff --git a/eof.php b/eof.php
+index 0bfc124..45bacb1 100644
+--- a/eof.php
++++ b/eof.php
+@@ -1,2 +1,2 @@
+ first
+-second
+\ No newline at end of file
++third
+\ No newline at end of file

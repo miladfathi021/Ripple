@@ -1,0 +1,12 @@
+diff --git a/src.php b/src.php
+index e06c688..8bbd2bc 100644
+--- a/src.php
++++ b/src.php
+@@ -7,5 +7,6 @@ line6
+ line7
+ line8
+ line9
+-old
++new
++another
+ context

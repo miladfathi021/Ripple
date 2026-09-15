@@ -1,0 +1,8 @@
+diff --git a/NewService.php b/NewService.php
+new file mode 100644
+index 0000000..8d3332f
+--- /dev/null
++++ b/NewService.php
+@@ -0,0 +1,2 @@
++new line one
++new line two

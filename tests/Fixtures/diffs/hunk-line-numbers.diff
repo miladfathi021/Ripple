@@ -1,0 +1,10 @@
+diff --git a/src/Example.php b/src/Example.php
+index 1111111..2222222 100644
+--- a/src/Example.php
++++ b/src/Example.php
+@@ -10,3 +10,4 @@
+ context
+-old
++new
++another
+ context

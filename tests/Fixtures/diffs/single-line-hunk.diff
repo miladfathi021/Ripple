@@ -1,0 +1,7 @@
+diff --git a/one.php b/one.php
+index 6c542ab..5ea2ed4 100644
+--- a/one.php
++++ b/one.php
+@@ -1 +1 @@
+-only
++changed
