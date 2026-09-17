@@ -38,9 +38,19 @@ The adapter matches known Laravel APIs on the AST. It does not boot the applicat
 
 `graph` and `reverse_graph` are complete. Reports can be several megabytes. Compact JSON is not implemented.
 
-## AI is a stub
+## AI is optional and vendor-specific
 
-`NullAIProvider` returns no text. `--ai` does not call a vendor. There is no model selection, retry, or streaming.
+OpenAI is implemented via `OpenAIProvider` and the Responses API. CodeCraft is implemented via `CodeCraftProvider` and the Chat Completions API. Other vendors are not supported. `NullAIProvider` is used when AI is disabled.
+
+`--ai` plus `ripple.json` (`enabled`, `provider`, and `model`) plus `RIPPLE_AI_API_KEY` are required for generated text. CodeCraft also accepts optional `base_url` (default `https://www.codecraftapi.com/v1`). Missing configuration or provider errors omit AI sections; they do not fail deterministic analysis.
+
+Requests send structured analysis facts, not the full source tree. Those facts still leave the machine when a provider is used.
+
+There is no streaming, tool calling, web search, or automatic retry. The HTTP timeout defaults to 30 seconds. Optional `ai.timeout_seconds` must be a positive JSON integer (not a float such as `30.0`).
+
+PHPUnit never calls OpenAI or CodeCraft. Do not add tests that require a real `RIPPLE_AI_API_KEY`. Local `.env` is optional, gitignored, and must not be committed. It does not change GitHub Action behavior.
+
+The GitHub Action does not enable `--ai` and must not be given an AI secret.
 
 ## GitHub Action builds this repository
 

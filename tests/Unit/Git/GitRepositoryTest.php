@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ripple\Tests\Unit\Git;
 
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 use Ripple\Git\GitRepository;
 use Ripple\Git\NotAGitRepository;
 use Ripple\Tests\Support\TemporaryGitRepository;
@@ -83,10 +84,45 @@ final class GitRepositoryTest extends TestCase
         $source = (string) file_get_contents(dirname(__DIR__, 3) . '/src/Git/GitRepository.php');
 
         $this->assertStringContainsString("array_merge(['git', '-C', \$this->workingDirectory], \$arguments)", $source);
+        $this->assertStringContainsString("unset(\$environment['RIPPLE_AI_API_KEY'], \$environment['Authorization'])", $source);
         $this->assertStringContainsString("\$environment['GIT_TERMINAL_PROMPT'] = '0'", $source);
         $this->assertStringContainsString("\$environment['GIT_OPTIONAL_LOCKS'] = '0'", $source);
         $this->assertStringNotContainsString('shell_exec', $source);
         $this->assertStringNotContainsString('passthru', $source);
         $this->assertDoesNotMatchRegularExpression('/proc_open\(\s*[\'"]git /', $source);
+    }
+
+    public function testGitChildProcessDoesNotInheritTheOpenAiApiKey(): void
+    {
+        $previousKey = getenv('RIPPLE_AI_API_KEY');
+        $previousAuthorization = getenv('Authorization');
+        putenv('RIPPLE_AI_API_KEY=sk-test-secret-key-do-not-leak');
+        putenv('Authorization=Bearer sk-test-secret-key-do-not-leak');
+
+        try {
+            $this->assertSame('sk-test-secret-key-do-not-leak', getenv('RIPPLE_AI_API_KEY'));
+            $this->assertSame('Bearer sk-test-secret-key-do-not-leak', getenv('Authorization'));
+
+            $method = new ReflectionMethod(GitRepository::class, 'processEnvironment');
+            $environment = $method->invoke(new GitRepository('.'));
+
+            $this->assertIsArray($environment);
+            $this->assertArrayNotHasKey('RIPPLE_AI_API_KEY', $environment);
+            $this->assertArrayNotHasKey('Authorization', $environment);
+            $this->assertSame('0', $environment['GIT_TERMINAL_PROMPT']);
+            $this->assertSame('0', $environment['GIT_OPTIONAL_LOCKS']);
+            $this->assertSame('sk-test-secret-key-do-not-leak', getenv('RIPPLE_AI_API_KEY'));
+        } finally {
+            if (is_string($previousKey)) {
+                putenv('RIPPLE_AI_API_KEY=' . $previousKey);
+            } else {
+                putenv('RIPPLE_AI_API_KEY');
+            }
+            if (is_string($previousAuthorization)) {
+                putenv('Authorization=' . $previousAuthorization);
+            } else {
+                putenv('Authorization');
+            }
+        }
     }
 }

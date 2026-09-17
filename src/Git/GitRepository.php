@@ -109,6 +109,8 @@ final class GitRepository
             $environment = [];
         }
 
+        unset($environment['RIPPLE_AI_API_KEY'], $environment['Authorization']);
+
         $environment['GIT_TERMINAL_PROMPT'] = '0';
         $environment['GIT_OPTIONAL_LOCKS'] = '0';
 

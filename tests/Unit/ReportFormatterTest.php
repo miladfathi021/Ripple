@@ -56,100 +56,34 @@ final class ReportFormatterTest extends TestCase
 
         $this->assertSame(
             <<<'TEXT'
-🌊 Ripple
-
-Repository index:
-  PHP files: 0
-  Symbols: 0
-  Dependencies: 0
-
+Ripple Analysis
+───────────────
+Risk: 0 / 100 (Low)
 Changed files: 2
-
-M src/ReservationService.php
-  +2 -1
-
-A src/NewService.php
-  +48
-
-Changed symbols:
-  None
-
-Direct impact:
-  None
-
-Blast radius:
-  None
-
-Test impact:
-  None
-
-Risk score:
-  0/100 — Low
-
-Dependencies:
-  None
-
-Dependency graph:
-  Nodes: 0
-  Edges: 0
-
-Reverse dependencies:
-  None
+Blast radius: 0 symbols
+Affected tests: 0 direct, 0 indirect
 TEXT,
             $output,
         );
     }
 
-    public function testTextOutputListsChangedSymbolsAndUnmappedLines(): void
+    public function testTextOutputOmitsChangedSymbolAndUnmappedLineLists(): void
     {
         $output = (new TextReportFormatter())->format($this->resultWithChangedSymbols());
 
         $this->assertSame(
             <<<'TEXT'
-🌊 Ripple
-
-Repository index:
-  PHP files: 0
-  Symbols: 0
-  Dependencies: 0
-
+Ripple Analysis
+───────────────
+Risk: 0 / 100 (Low)
 Changed files: 1
-
-M src/Services/ReservationService.php
-  +5
-
-Changed symbols:
-
-  App\Services\ReservationService::updateStatus()
-    lines: 35, 36, 40
-
-Unmapped changed lines:
-  src/Services/ReservationService.php: 3, 4
-
-Direct impact:
-  None
-
-Blast radius:
-  None
-
-Test impact:
-  None
-
-Risk score:
-  0/100 — Low
-
-Dependencies:
-  None
-
-Dependency graph:
-  Nodes: 0
-  Edges: 0
-
-Reverse dependencies:
-  None
+Blast radius: 0 symbols
+Affected tests: 0 direct, 0 indirect
 TEXT,
             $output,
         );
+        $this->assertStringNotContainsString('Changed symbols:', $output);
+        $this->assertStringNotContainsString('Unmapped changed lines:', $output);
     }
 
     public function testJsonOutputExposesStructuredDiffData(): void
@@ -297,11 +231,10 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString('Dependencies:', $text);
-        $this->assertStringContainsString('App\\Services\\ReservationService::updateStatus', $text);
-        $this->assertStringContainsString('→ App\\Services\\PaymentService::validate', $text);
-        $this->assertStringContainsString('type: method_call', $text);
-        $this->assertStringContainsString('line: 35', $text);
+        $this->assertStringContainsString('Ripple Analysis', $text);
+        $this->assertStringContainsString('Changed files: 1', $text);
+        $this->assertStringNotContainsString('Dependencies:', $text);
+        $this->assertStringNotContainsString('type: method_call', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(
@@ -356,10 +289,9 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString("Dependency graph:\n  Nodes: 3\n  Edges: 2", $text);
-        $this->assertStringContainsString($source, $text);
-        $this->assertStringContainsString('→ App\\Services\\PaymentService [parameter_type]', $text);
-        $this->assertStringContainsString('→ App\\Services\\PaymentService::validate [method_call]', $text);
+        $this->assertStringContainsString('Ripple Analysis', $text);
+        $this->assertStringNotContainsString('Dependency graph:', $text);
+        $this->assertStringNotContainsString('→ App\\Services\\PaymentService [parameter_type]', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(
@@ -443,10 +375,9 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString('Reverse dependencies:', $text);
-        $this->assertStringContainsString("  App\\Services\\PaymentService\n    ← {$source} [parameter_type]", $text);
-        $this->assertStringContainsString("  {$target}\n    ← {$source} [method_call]", $text);
-        $this->assertStringContainsString("Blast radius:\n  None", $text);
+        $this->assertStringContainsString('Ripple Analysis', $text);
+        $this->assertStringNotContainsString('Reverse dependencies:', $text);
+        $this->assertStringContainsString('Blast radius: 0 symbols', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(
@@ -496,8 +427,9 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString("Direct impact:\n\n  {$impacted}()\n    ← method_call\n    ← parameter_type", $text);
-        $this->assertStringContainsString("Blast radius:\n  None", $text);
+        $this->assertStringContainsString('Ripple Analysis', $text);
+        $this->assertStringNotContainsString('Direct impact:', $text);
+        $this->assertStringContainsString('Blast radius: 0 symbols', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(
@@ -600,20 +532,9 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Blast radius:
-  Depth 1:
-    AuditService::record()
-    PaymentService::validate()
-
-  Depth 2:
-    NotificationService::send()
-    PaymentRepository::update()
-TEXT,
-            $text,
-        );
-        $this->assertStringContainsString('Direct impact:', $text);
+        $this->assertStringContainsString('Blast radius: 4 symbols', $text);
+        $this->assertStringNotContainsString('Depth 1:', $text);
+        $this->assertStringNotContainsString('Direct impact:', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame([], $payload['direct_impact']);
@@ -684,7 +605,7 @@ TEXT,
             $payload['risk_score'],
         );
         $this->assertStringNotContainsString('Risk factors:', $text);
-        $this->assertStringContainsString("Risk score:\n  0/100 — Low", $text);
+        $this->assertStringContainsString('Risk: 0 / 100 (Low)', $text);
     }
 
     public function testTextAndJsonOutputIncludeRiskFactors(): void
@@ -723,24 +644,9 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Risk score:
-  40/100 — Medium
-
-Risk factors:
-
-⚠ High fan-in
-   ReservationService::updateStatus has 8 direct dependents.
-
-⚠ Large blast radius
-   12 symbols may be affected by this change.
-
-ℹ Multiple changed symbols
-   2 symbols were changed in this analysis.
-TEXT,
-            $text,
-        );
+        $this->assertStringContainsString('Risk: 40 / 100 (Medium)', $text);
+        $this->assertStringNotContainsString('Risk factors:', $text);
+        $this->assertStringNotContainsString('High fan-in', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(
@@ -837,20 +743,8 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Risk score:
-  19/100 — Low
-
-Risk factors:
-
-⚠ Historical churn
-   Frequently changed files:
-     src/Services/ReservationService.php — 31 commits
-     src/Services/PaymentService.php — 12 commits
-TEXT,
-            $text,
-        );
+        $this->assertStringContainsString('Risk: 19 / 100 (Low)', $text);
+        $this->assertStringNotContainsString('Historical churn', $text);
         $this->assertStringNotContainsString('likely to break', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
@@ -913,21 +807,8 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Affected flows:
-
-  [construction_chain]
-    ReservationService::updateStatus()
-      → StripeClient
-
-  [call_chain]
-    ReservationService::updateStatus()
-      → PaymentService::validate()
-      → PaymentRepository::update()
-TEXT,
-            $text,
-        );
+        $this->assertStringContainsString('Ripple Analysis', $text);
+        $this->assertStringNotContainsString('Affected flows:', $text);
         $this->assertStringNotContainsString('Database', $text);
         $this->assertStringNotContainsString('External API', $text);
 
@@ -1003,19 +884,8 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Semantic impact:
-  Blast radius:
-    [api_entrypoint]
-      App\Http\Controllers\ReservationController::update()
-
-  Affected flows:
-    [database_write]
-      App\Repositories\PaymentRepository::update()
-TEXT,
-            $text,
-        );
+        $this->assertStringContainsString('Ripple Analysis', $text);
+        $this->assertStringNotContainsString('Semantic impact:', $text);
         $this->assertStringNotContainsString('Queue', $text);
         $this->assertStringNotContainsString('Authentication', $text);
 
@@ -1071,24 +941,9 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Git history:
-  src/NewService.php
-    commits: 0
-    lines added: 0
-    lines deleted: 0
-    contributors: 0
-    last changed: none
-  src/Services/ReservationService.php
-    commits: 18
-    lines added: 742
-    lines deleted: 391
-    contributors: 5
-    last changed: 2026-09-14 13:42:10 UTC
-TEXT,
-            $text,
-        );
+        $this->assertStringContainsString('Changed files: 1', $text);
+        $this->assertStringNotContainsString('Git history:', $text);
+        $this->assertStringNotContainsString('commits: 18', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(
@@ -1167,20 +1022,9 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Test impact:
-  Direct:
-    tests/Unit/ReservationServiceTest.php
-      Tests\Unit\ReservationServiceTest::testUpdateStatus
-
-  Indirect:
-    tests/Feature/PaymentTest.php
-      Tests\Feature\PaymentTest::testReservationPayment
-        depth: 3
-TEXT,
-            $text,
-        );
+        $this->assertStringContainsString('Affected tests: 1 direct, 1 indirect', $text);
+        $this->assertStringNotContainsString('Test impact:', $text);
+        $this->assertStringNotContainsString('tests/Unit/ReservationServiceTest.php', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(
@@ -1235,7 +1079,9 @@ TEXT,
         );
 
         $text = (new TextReportFormatter())->format($result);
-        $this->assertStringContainsString("Repository index:\n  PHP files: 3\n  Symbols: 1\n  Dependencies: 1", $text);
+        $this->assertStringContainsString('Ripple Analysis', $text);
+        $this->assertStringNotContainsString('Repository index:', $text);
+        $this->assertStringNotContainsString('PHP files: 3', $text);
 
         $payload = json_decode((new JsonReportFormatter())->format($result), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(

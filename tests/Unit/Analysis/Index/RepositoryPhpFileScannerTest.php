@@ -36,6 +36,7 @@ final class RepositoryPhpFileScannerTest extends TestCase
         $directory->write('app/Services/Keep.php', "<?php\n");
         $directory->write('vendor/package/Skip.php', "<?php\n");
         $directory->write('.git/hooks/Skip.php', "<?php\n");
+        $directory->write('.phpunit.cache/tmp-run/Skip.php', "<?php\n");
         $directory->write('node_modules/pkg/Skip.php', "<?php\n");
         $directory->write('storage/logs/Skip.php', "<?php\n");
         $directory->write('bootstrap/cache/Skip.php', "<?php\n");

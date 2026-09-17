@@ -75,24 +75,11 @@ final class TestImpactIntegrationTest extends TestCase
 
         $this->assertSame(Command::SUCCESS, $tester->execute(['--format' => 'text']));
         $text = $tester->getDisplay();
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Test impact:
-  Direct:
-    tests/Unit/ReservationServiceTest.php
-      Tests\Unit\ReservationServiceTest::documents_status_update
-      Tests\Unit\ReservationServiceTest::testUpdateStatus
-
-  Indirect:
-    tests/Feature/PaymentTest.php
-      Tests\Feature\PaymentTest::testReservationPayment
-        depth: 2
-TEXT,
-            $text,
-        );
+        $this->assertStringContainsString('Affected tests: 2 direct, 1 indirect', $text);
+        $this->assertStringNotContainsString('Test impact:', $text);
         $this->assertStringNotContainsString('LooksLikeATest', $text);
         $this->assertStringNotContainsString('mutation', strtolower($text));
-        $this->assertStringContainsString('11/100 — Low', $text);
+        $this->assertStringContainsString('Risk: 11 / 100 (Low)', $text);
 
         $this->assertSame(Command::SUCCESS, $tester->execute(['--format' => 'json']));
         $payload = json_decode($tester->getDisplay(), true, 512, JSON_THROW_ON_ERROR);

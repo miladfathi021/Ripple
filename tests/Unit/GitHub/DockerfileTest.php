@@ -21,6 +21,9 @@ final class DockerfileTest extends TestCase
         $this->assertStringNotContainsString('OPENAI', $dockerfile);
         $this->assertStringNotContainsString('--privileged', $dockerfile);
         $this->assertStringNotContainsString('docker.sock', $dockerfile);
+
+        $dockerignore = (string) file_get_contents(dirname(__DIR__, 3) . '/.dockerignore');
+        $this->assertStringContainsString(".env\n", $dockerignore);
     }
 
     private function dockerfile(): string

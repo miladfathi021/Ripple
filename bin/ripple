@@ -4,6 +4,7 @@
 declare(strict_types=1);
 
 use Ripple\CLI\ApplicationFactory;
+use Ripple\CLI\EnvironmentFile;
 
 $autoload = dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -13,6 +14,8 @@ if (!is_file($autoload)) {
 }
 
 require $autoload;
+
+EnvironmentFile::load(dirname(__DIR__) . '/.env');
 
 $application = (new ApplicationFactory())->create();
 $application->run();

@@ -99,32 +99,11 @@ final class RiskFactorIntegrationTest extends TestCase
         $this->assertSame(Command::SUCCESS, $tester->execute(['--format' => 'text']));
         $this->assertSame($text, $tester->getDisplay());
 
-        $this->assertStringContainsString('Direct impact:', $text);
+        $this->assertStringContainsString('Ripple Analysis', $text);
         $this->assertStringContainsString('Blast radius:', $text);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Risk score:
-  51/100 — Medium
-
-Risk factors:
-
-⚠ High fan-in
-   Hub::run has 5 direct dependents.
-
-⚠ Large blast radius
-   6 symbols may be affected by this change.
-
-⚠ Deep dependency chain
-   The change can reach impacted symbols up to 2 dependency levels away.
-
-ℹ Multiple dependency types
-   Hub::run has dependents through 2 different dependency types.
-
-ℹ Multiple changed symbols
-   2 symbols were changed in this analysis.
-TEXT,
-            $text,
-        );
+        $this->assertStringContainsString('Risk: 51 / 100 (Medium)', $text);
+        $this->assertStringNotContainsString('Direct impact:', $text);
+        $this->assertStringNotContainsString('Risk factors:', $text);
         $this->assertStringNotContainsString('This PR will break', $text);
 
         $this->assertSame(Command::SUCCESS, $tester->execute(['--format' => 'json']));

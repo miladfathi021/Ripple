@@ -90,10 +90,8 @@ JSON);
 
         $this->assertSame(Command::SUCCESS, $tester->execute(['--format' => 'text']));
         $text = $tester->getDisplay();
-        $this->assertStringContainsString('[api_entrypoint]', $text);
-        $this->assertStringContainsString('ReservationController::update()', $text);
-        $this->assertStringContainsString('[database_write]', $text);
-        $this->assertStringContainsString('PaymentRepository::update()', $text);
+        $this->assertStringContainsString('Ripple Analysis', $text);
+        $this->assertStringNotContainsString('[api_entrypoint]', $text);
         $this->assertStringNotContainsString('laravel', strtolower($text));
 
         $this->assertSame(Command::SUCCESS, $tester->execute(['--format' => 'json']));

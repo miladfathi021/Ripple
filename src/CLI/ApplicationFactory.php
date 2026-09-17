@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Ripple\CLI;
 
 use Ripple\AI\AIConfigurationLoader;
+use Ripple\AI\AIProviderFactory;
+use Ripple\AI\ConfiguredAIProvider;
 use Ripple\AI\Explanation\AIPrExplanationService;
 use Ripple\AI\Explanation\AIRiskExplanationService;
-use Ripple\AI\NullAIProvider;
 use Ripple\AI\Testing\AITestRecommendationService;
 use Ripple\Analysis\AnalysisRunner;
 use Ripple\Analysis\Index\RepositoryIndexHolder;
@@ -31,9 +32,15 @@ final class ApplicationFactory
         private readonly string $workingDirectory = '.',
         ?AIRiskExplanationService $riskExplanationService = null,
         ?AITestRecommendationService $testRecommendationService = null,
+        ?AIProviderFactory $aiProviderFactory = null,
     ) {
+        EnvironmentFile::load(EnvironmentFile::pathForWorkingDirectory($workingDirectory));
         $this->analysisRunner = $analysisRunner ?? self::runnerForWorkingDirectory($workingDirectory);
-        $provider = new NullAIProvider();
+        $provider = new ConfiguredAIProvider(
+            $this->aiConfigurationLoader,
+            $aiProviderFactory ?? new AIProviderFactory(),
+            $workingDirectory,
+        );
         $this->explanationService = $explanationService ?? new AIPrExplanationService($provider);
         $this->riskExplanationService = $riskExplanationService ?? new AIRiskExplanationService($provider);
         $this->testRecommendationService = $testRecommendationService ?? new AITestRecommendationService($provider);

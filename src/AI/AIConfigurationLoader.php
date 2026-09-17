@@ -49,7 +49,17 @@ final class AIConfigurationLoader
             throw $this->failure($path, '"ai.enabled" must be a boolean.');
         }
 
-        return new AIConfiguration($decoded->ai->enabled);
+        if ($decoded->ai->enabled !== true) {
+            return AIConfiguration::disabled();
+        }
+
+        return new AIConfiguration(
+            enabled: true,
+            provider: $this->requiredString($decoded->ai, 'provider', $path),
+            model: $this->optionalString($decoded->ai, 'model', $path),
+            timeoutSeconds: $this->timeoutSeconds($decoded->ai, $path),
+            baseUrl: $this->optionalString($decoded->ai, 'base_url', $path),
+        );
     }
 
     public static function pathForWorkingDirectory(string $workingDirectory): string
@@ -59,6 +69,48 @@ final class AIConfigurationLoader
         }
 
         return rtrim($workingDirectory, '/\\') . '/' . self::FILENAME;
+    }
+
+    private function requiredString(stdClass $ai, string $key, string $path): string
+    {
+        if (!property_exists($ai, $key)) {
+            throw $this->failure($path, 'AI is enabled but no provider is configured.');
+        }
+
+        $value = $this->optionalString($ai, $key, $path);
+        if ($value === null) {
+            throw $this->failure($path, '"ai.' . $key . '" must be a non-empty string.');
+        }
+
+        return $value;
+    }
+
+    private function optionalString(stdClass $ai, string $key, string $path): ?string
+    {
+        if (!property_exists($ai, $key)) {
+            return null;
+        }
+
+        $value = $ai->{$key};
+        if (!is_string($value) || trim($value) === '' || trim($value) !== $value) {
+            throw $this->failure($path, '"ai.' . $key . '" must be a non-empty string.');
+        }
+
+        return $value;
+    }
+
+    private function timeoutSeconds(stdClass $ai, string $path): int
+    {
+        if (!property_exists($ai, 'timeout_seconds')) {
+            return AIConfiguration::DEFAULT_TIMEOUT_SECONDS;
+        }
+
+        $value = $ai->timeout_seconds;
+        if (!is_int($value) || $value < 1) {
+            throw $this->failure($path, '"ai.timeout_seconds" must be a positive integer.');
+        }
+
+        return $value;
     }
 
     private function failure(string $path, string $reason, ?Throwable $previous = null): AIProviderException
