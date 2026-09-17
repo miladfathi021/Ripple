@@ -70,18 +70,10 @@ final class AffectedFlowIntegrationTest extends TestCase
         $this->assertSame(Command::SUCCESS, $tester->execute(['--format' => 'text']));
         $this->assertSame($text, $tester->getDisplay());
 
-        $this->assertStringContainsString('Direct impact:', $text);
+        $this->assertStringContainsString('Ripple Analysis', $text);
         $this->assertStringContainsString('Blast radius:', $text);
-        $this->assertStringContainsString('Affected flows:', $text);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-  [call_chain]
-    ReservationService::updateStatus()
-      → PaymentService::validate()
-      → PaymentRepository::update()
-TEXT,
-            $text,
-        );
+        $this->assertStringNotContainsString('Direct impact:', $text);
+        $this->assertStringNotContainsString('Affected flows:', $text);
         $this->assertStringNotContainsString('Database', $text);
         $this->assertStringNotContainsString('Queue', $text);
 

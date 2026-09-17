@@ -53,11 +53,97 @@ final class AIConfigurationLoaderTest extends TestCase
         $this->assertFalse($configuration->isEnabled());
     }
 
-    public function testEnabledFlagCanBeTrueWithoutSelectingAProvider(): void
+    public function testEnabledFlagRequiresAProvider(): void
     {
-        $configuration = $this->load('{"ai": {"enabled": true}}');
+        $this->expectException(AIProviderException::class);
+        $this->expectExceptionMessage('AI is enabled but no provider is configured.');
+
+        $this->load('{"ai": {"enabled": true}}');
+    }
+
+    public function testEnabledOpenAiConfigurationLoadsProviderAndModel(): void
+    {
+        $configuration = $this->load('{"ai": {"enabled": true, "provider": "openai", "model": "test-model"}}');
 
         $this->assertTrue($configuration->isEnabled());
+        $this->assertSame('openai', $configuration->provider);
+        $this->assertSame('test-model', $configuration->model);
+        $this->assertSame(30, $configuration->timeoutSeconds);
+        $this->assertNull($configuration->baseUrl);
+    }
+
+    public function testEnabledCodeCraftConfigurationLoadsProviderModelAndBaseUrl(): void
+    {
+        $configuration = $this->load('{"ai": {"enabled": true, "provider": "codecraft", "model": "test-model", "base_url": "https://www.codecraftapi.com/v1"}}');
+
+        $this->assertTrue($configuration->isEnabled());
+        $this->assertSame('codecraft', $configuration->provider);
+        $this->assertSame('test-model', $configuration->model);
+        $this->assertSame('https://www.codecraftapi.com/v1', $configuration->baseUrl);
+    }
+
+    public function testEnabledOpenAiConfigurationCanOmitModelUntilProviderSelection(): void
+    {
+        $configuration = $this->load('{"ai": {"enabled": true, "provider": "openai"}}');
+
+        $this->assertTrue($configuration->isEnabled());
+        $this->assertSame('openai', $configuration->provider);
+        $this->assertNull($configuration->model);
+    }
+
+    public function testTimeoutSecondsCanBeConfigured(): void
+    {
+        $configuration = $this->load('{"ai": {"enabled": true, "provider": "openai", "model": "test-model", "timeout_seconds": 12}}');
+
+        $this->assertSame(12, $configuration->timeoutSeconds);
+    }
+
+    public function testEmptyBaseUrlFails(): void
+    {
+        $this->expectException(AIProviderException::class);
+        $this->expectExceptionMessage('"ai.base_url" must be a non-empty string.');
+
+        $this->load('{"ai": {"enabled": true, "provider": "codecraft", "model": "test-model", "base_url": ""}}');
+    }
+
+    public function testOpenAiConfigurationIgnoresUnusedBaseUrlAtLoadTime(): void
+    {
+        $configuration = $this->load('{"ai": {"enabled": true, "provider": "openai", "model": "test-model", "base_url": "https://www.codecraftapi.com/v1"}}');
+
+        $this->assertSame('openai', $configuration->provider);
+        $this->assertSame('https://www.codecraftapi.com/v1', $configuration->baseUrl);
+    }
+
+    public function testNonStringProviderFails(): void
+    {
+        $this->expectException(AIProviderException::class);
+        $this->expectExceptionMessage('"ai.provider" must be a non-empty string.');
+
+        $this->load('{"ai": {"enabled": true, "provider": 1}}');
+    }
+
+    public function testEmptyProviderFails(): void
+    {
+        $this->expectException(AIProviderException::class);
+        $this->expectExceptionMessage('"ai.provider" must be a non-empty string.');
+
+        $this->load('{"ai": {"enabled": true, "provider": ""}}');
+    }
+
+    public function testInvalidModelFails(): void
+    {
+        $this->expectException(AIProviderException::class);
+        $this->expectExceptionMessage('"ai.model" must be a non-empty string.');
+
+        $this->load('{"ai": {"enabled": true, "provider": "openai", "model": " "}}');
+    }
+
+    public function testInvalidTimeoutFails(): void
+    {
+        $this->expectException(AIProviderException::class);
+        $this->expectExceptionMessage('"ai.timeout_seconds" must be a positive integer.');
+
+        $this->load('{"ai": {"enabled": true, "provider": "openai", "model": "test-model", "timeout_seconds": 0}}');
     }
 
     public function testInvalidAiValueFails(): void

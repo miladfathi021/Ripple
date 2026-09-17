@@ -88,6 +88,8 @@ Laravel rules inspect AST call facts and inheritance already extracted from the 
 
 Formatters receive `AnalysisResult` plus optional AI value objects. They never call `AIProvider`.
 
+Default `--format=text` is a short terminal summary: risk, changed-file count, blast-radius size, affected-test counts, and truncated AI sections. `--format=json` keeps the full `AnalysisResult`, including graphs and complete AI text.
+
 ### GitHub
 
 `PullRequestCommentSelector` encodes the “oldest matching `<!-- ripple-analysis -->`” rule used by the workflow’s JavaScript. Analysis does not call the GitHub API.
@@ -116,11 +118,15 @@ AnalysisResult
                     │
                     ▼
                AIProvider::generate(AIRequest): AIResponse
+                    │
+                    ├── NullAIProvider
+                    ├── OpenAIProvider     (Responses API)
+                    └── CodeCraftProvider  (Chat Completions API)
 ```
 
 Three services exist so a PR summary, a risk narrative, and test advice can succeed or fail independently. The CLI catches `AIProviderException` per call.
 
-`AIProvider` is the extension point. `NullAIProvider` returns `AIResponse::none()`.
+`AIProvider` is the extension point. `ApplicationFactory` injects `ConfiguredAIProvider`, which loads `ripple.json` and constructs `NullAIProvider`, `OpenAIProvider`, or `CodeCraftProvider` only when `generate()` runs. Deterministic packages do not import OpenAI, CodeCraft, or HTTP clients. An optional local `.env` may populate `RIPPLE_AI_API_KEY` when the process environment does not already set it; `EnvironmentAIApiKey` still reads only the environment.
 
 ## Stability
 

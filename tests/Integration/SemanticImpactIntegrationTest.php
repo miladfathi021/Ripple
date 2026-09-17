@@ -69,19 +69,8 @@ final class SemanticImpactIntegrationTest extends TestCase
         $this->assertSame(Command::SUCCESS, $tester->execute(['--format' => 'text']));
         $this->assertSame($text, $tester->getDisplay());
 
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Semantic impact:
-  Blast radius:
-    [api_entrypoint]
-      ReservationController::update()
-
-  Affected flows:
-    [database_write]
-      PaymentRepository::update()
-TEXT,
-            $text,
-        );
+        $this->assertStringContainsString('Ripple Analysis', $text);
+        $this->assertStringNotContainsString('Semantic impact:', $text);
         $this->assertStringNotContainsString('[queue]', $text);
 
         $this->assertSame(Command::SUCCESS, $tester->execute(['--format' => 'json']));

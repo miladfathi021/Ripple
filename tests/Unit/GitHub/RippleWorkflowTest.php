@@ -23,7 +23,8 @@ final class RippleWorkflowTest extends TestCase
         $this->assertStringNotContainsString('issues: write', $yaml);
         $this->assertStringNotContainsString('id-token: write', $yaml);
         $this->assertStringNotContainsString('secrets.', $yaml);
-        $this->assertDoesNotMatchRegularExpression('/openai|anthropic|gemini|api[_-]?key/i', $yaml);
+        $this->assertStringNotContainsString('RIPPLE_AI_API_KEY', $yaml);
+        $this->assertDoesNotMatchRegularExpression('/openai|anthropic|gemini|codecraft|api[_-]?key/i', $yaml);
         $this->assertStringNotContainsString('--ai', $yaml);
         $this->assertStringContainsString('persist-credentials: false', $yaml);
         $this->assertStringContainsString('--network none', $yaml);

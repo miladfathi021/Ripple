@@ -143,7 +143,7 @@ Invalid-format and AI errors go to stderr so JSON on stdout stays parseable.
 
 ## Example output
 
-The compact `--format=comment` report below is actual CLI output from a small sample app (not this repository). Graph dumps are omitted here; `--format=text` prints the full index, graph, and reverse graph.
+The compact `--format=comment` report below is actual CLI output from a small sample app (not this repository). Full graphs, file lists, and history stay in `--format=json`.
 
 ```text
 <!-- ripple-analysis -->
@@ -185,64 +185,15 @@ Multiple changed symbols
 See full analysis in the workflow artifact.
 ```
 
-The matching `--format=text` report (truncated after risk; the CLI also prints Git history, dependencies, and the full graphs):
+The matching `--format=text` report is a short terminal summary. Full graphs, file lists, and history stay in `--format=json`.
 
 ```text
-🌊 Ripple
-
-Repository index:
-  PHP files: 16
-  Symbols: 47
-  Dependencies: 46
-
+Ripple Analysis
+───────────────
+Risk: 60 / 100 (High)
 Changed files: 1
-
-M src/Services/ReservationService.php
-  +2
-
-Changed symbols:
-
-  App\Services\ReservationService::updateStatus()
-    lines: 14
-
-  App\Services\ReservationService::cancel()
-    lines: 19
-
-Direct impact:
-
-  App\Http\AdminReservationController::forceUpdate()
-    ← method_call
-
-  App\Http\ReservationController::update()
-    ← method_call
-
-  App\Jobs\SyncReservationJob::handle()
-    ← method_call
-  …
-
-Blast radius:
-  Depth 1:
-    App\Http\AdminReservationController::forceUpdate()
-    App\Http\ReservationController::update()
-    …
-    Tests\Unit\ReservationServiceTest::testUpdateStatus()
-
-  Depth 2:
-    App\Http\ApiGateway::forward()
-
-  Depth 3:
-    App\Http\Router::dispatch()
-
-  Depth 4:
-    App\Http\HttpKernel::handle()
-
-Test impact:
-  Direct:
-    tests/Unit/ReservationServiceTest.php
-      Tests\Unit\ReservationServiceTest::testUpdateStatus
-
-Risk score:
-  60/100 — High
+Blast radius: 10 symbols
+Affected tests: 1 direct, 0 indirect
 ```
 
 ---
@@ -366,12 +317,17 @@ Only `"laravel"` enables an adapter. Other `framework` strings are accepted and 
 ```json
 {
   "ai": {
-    "enabled": true
+    "enabled": true,
+    "provider": "openai",
+    "model": "YOUR_MODEL_NAME",
+    "timeout_seconds": 30
   }
 }
 ```
 
-`--ai` still required. `enabled` must be a boolean. See [AI](#ai).
+`--ai` is still required. `enabled` must be a boolean. `provider` is required when AI is enabled (`openai` or `codecraft`). `model` is required for those providers. Optional `base_url` is used by CodeCraft (default `https://www.codecraftapi.com/v1`). The API key is **not** stored in this file. See [AI](#ai).
+
+Optional `timeout_seconds` must be a positive JSON integer (not a float such as `30.0`). Default: `30`.
 
 ---
 
@@ -463,16 +419,103 @@ It does **not** boot Laravel, run Artisan, read `.env`, or infer meaning from ar
 
 ## AI
 
-AI is optional interpretation of `AnalysisResult`.
+AI is optional interpretation of `AnalysisResult`. Deterministic analysis does not use it.
 
 ```bash
 ./bin/ripple analyze          # never calls AI
 ./bin/ripple analyze --ai     # calls AI only if ripple.json enables it
 ```
 
-`--ai` plus `"ai": { "enabled": true }` is required. The shipped implementation uses `NullAIProvider`, which makes no network request and returns no text. JSON therefore stays unchanged with the current provider.
+Supported providers:
 
-When a real provider is wired later, three independent calls run after analysis:
+| Provider | `ripple.json` `provider` | API |
+| --- | --- | --- |
+| None | omit `ai` / `"enabled": false` | `NullAIProvider` (no network) |
+| OpenAI | `openai` | OpenAI **Responses** API (`POST /v1/responses`) |
+| CodeCraft | `codecraft` | CodeCraft **Chat Completions** API (`POST {base_url}/chat/completions`) |
+
+`--ai` plus a valid `ripple.json` AI block is required. OpenAI:
+
+```json
+{
+  "ai": {
+    "enabled": true,
+    "provider": "openai",
+    "model": "YOUR_MODEL_NAME"
+  }
+}
+```
+
+CodeCraft (choose a model ID from your CodeCraft account; Ripple does not assume which models are available):
+
+```json
+{
+  "ai": {
+    "enabled": true,
+    "provider": "codecraft",
+    "model": "MODEL_ID",
+    "base_url": "https://www.codecraftapi.com/v1"
+  }
+}
+```
+
+`base_url` is optional for CodeCraft and defaults to `https://www.codecraftapi.com/v1`. Do not put the complete `/chat/completions` path in `base_url`.
+
+```bash
+export RIPPLE_AI_API_KEY="..."
+./bin/ripple analyze --ai
+```
+
+### Local AI setup
+
+`.env` is a local convenience for developers. Copy the example file and set the key there if you do not want to export it in your shell:
+
+```bash
+cp .env.example .env
+```
+
+```env
+RIPPLE_AI_API_KEY=cc_...
+```
+
+Do not commit `.env`. A placeholder such as `cc_...` is only documentation; never put a real key in the repository.
+
+Then enable AI in `ripple.json` (the API key is never stored in that file). Example for CodeCraft:
+
+```json
+{
+  "ai": {
+    "enabled": true,
+    "provider": "codecraft",
+    "model": "MODEL_ID",
+    "base_url": "https://www.codecraftapi.com/v1"
+  }
+}
+```
+
+Use `"provider": "openai"` and an OpenAI model name for the OpenAI Responses API instead. Obtain CodeCraft model IDs from your CodeCraft account.
+
+```bash
+./bin/ripple analyze --ai
+```
+
+`.env` is gitignored and must not be committed. Existing process environment variables win over `.env`. Ripple still reads `RIPPLE_AI_API_KEY` from the environment; `.env` only fills the variable when it is not already set.
+
+The GitHub Action does **not** pass `--ai` and must not receive `RIPPLE_AI_API_KEY`. PR analysis stays deterministic.
+
+For Docker, pass the key at run time. Do not bake `.env` into the image:
+
+```bash
+docker run --rm \
+  -e RIPPLE_AI_API_KEY="..." \
+  -v "$PWD":/workspace \
+  -w /workspace \
+  ripple analyze --ai
+```
+
+Default Docker analysis without that flag still works offline with no key.
+
+Three independent calls run after analysis:
 
 | Output | JSON field | Role |
 | --- | --- | --- |
@@ -480,9 +523,32 @@ When a real provider is wired later, three independent calls run after analysis:
 | Risk explanation | `ai_risk_explanation` | Why the existing score looks that way |
 | Test recommendations | `ai_test_recommendations` | Tests to review or consider adding |
 
-Each can fail without dropping the others or the deterministic report. AI is not given source files; it receives structured facts. It must not invent tests, coverage, or a different risk score.
+Each can fail without dropping the others or the deterministic report. AI cannot change the risk score, rebuild the graph, or execute application code.
 
-There is no OpenAI or Anthropic integration in this repository.
+Ripple sends **structured analysis facts** (changed symbols, blast radius, risk contributions, test impact, …), not the repository source tree, `.env`, or credentials.
+
+When AI is enabled, those structured facts are sent to the configured provider (OpenAI or CodeCraft). That is different from uploading complete source files; it is still data leaving your machine. Ripple does not make privacy or compliance guarantees about the vendor.
+
+If a provider call fails, JSON stays valid and the corresponding AI field is omitted. The CLI exit code still follows deterministic analysis.
+
+`NullAIProvider` remains the no-op implementation used when AI is disabled.
+
+Illustrative AI sections (not from a live API call):
+
+```text
+AI explanation:
+  This change updates ReservationService::updateStatus() and ReservationService::cancel().
+  Direct callers include ReservationController::update() and ReservationServiceTest::testUpdateStatus().
+
+AI risk explanation:
+  The High score comes from high fan-in, a large blast radius, and a deep dependency chain.
+
+AI test recommendations
+────────────────────────
+Consider updating Tests\Unit\ReservationServiceTest::testUpdateStatus.
+```
+
+Anthropic, Gemini, and other vendors are not supported.
 
 ---
 
@@ -511,11 +577,11 @@ The Action uses `pull_request` so untrusted PR code does not get write tokens vi
 
 ## Limitations
 
-Static analysis is not runtime proof. Unresolved types stay unknown. PHPUnit only. JSON includes the full graph. AI is a no-op provider today.
+Static analysis is not runtime proof. Unresolved types stay unknown. PHPUnit only. JSON includes the full graph. AI is optional OpenAI or CodeCraft; it is off by default and unused by the GitHub Action.
 
 Full list: [docs/limitations.md](docs/limitations.md).
 
-Possible later work (no timeline): real AI providers, compact JSON, more framework adapters, Pest, richer PHP types, tighter Action job permissions, non-root image user.
+Possible later work (no timeline): additional AI providers, compact JSON, more framework adapters, Pest, richer PHP types, tighter Action job permissions, non-root image user.
 
 ---
 

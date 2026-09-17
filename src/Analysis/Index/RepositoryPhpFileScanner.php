@@ -15,6 +15,7 @@ final class RepositoryPhpFileScanner
     /** @var list<string> */
     private const EXCLUDED_DIRECTORY_NAMES = [
         '.git',
+        '.phpunit.cache',
         'vendor',
         'node_modules',
         'storage',

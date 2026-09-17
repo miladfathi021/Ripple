@@ -21,30 +21,21 @@ final class AnalyzeCommandTest extends TestCase
         $statusCode = $tester->execute(['--format' => 'text']);
 
         $this->assertSame(Command::SUCCESS, $statusCode);
-        $this->assertStringContainsString('🌊 Ripple', $tester->getDisplay());
+        $this->assertStringContainsString('Ripple Analysis', $tester->getDisplay());
         $this->assertStringContainsString('Changed files: 1', $tester->getDisplay());
-        $this->assertStringContainsString('M src/Example.php', $tester->getDisplay());
-        $this->assertStringContainsString('+1', $tester->getDisplay());
-        $this->assertStringContainsString('-1', $tester->getDisplay());
-        $this->assertStringContainsString('Changed symbols:', $tester->getDisplay());
-        $this->assertStringContainsString('Example::run()', $tester->getDisplay());
-        $this->assertStringContainsString('Direct impact:', $tester->getDisplay());
+        $this->assertStringContainsString('Risk: 0 / 100 (Low)', $tester->getDisplay());
         $this->assertStringContainsString('Blast radius:', $tester->getDisplay());
-        $this->assertStringContainsString('None', $tester->getDisplay());
-        $this->assertStringContainsString('Test impact:', $tester->getDisplay());
-        $this->assertStringContainsString('Dependency graph:', $tester->getDisplay());
-        $this->assertStringContainsString('Reverse dependencies:', $tester->getDisplay());
-        $this->assertStringContainsString('Repository index:', $tester->getDisplay());
-        $this->assertStringContainsString('PHP files: 1', $tester->getDisplay());
+        $this->assertStringContainsString('Affected tests:', $tester->getDisplay());
         $this->assertStringNotContainsString('"status"', $tester->getDisplay());
+        $this->assertStringNotContainsString('Changed symbols:', $tester->getDisplay());
+        $this->assertStringNotContainsString('Direct impact:', $tester->getDisplay());
+        $this->assertStringNotContainsString('Dependency graph:', $tester->getDisplay());
+        $this->assertStringNotContainsString('Reverse dependencies:', $tester->getDisplay());
+        $this->assertStringNotContainsString('Repository index:', $tester->getDisplay());
         $this->assertStringNotContainsString('Risk factors:', $tester->getDisplay());
-        $this->assertStringContainsString('Risk score:', $tester->getDisplay());
-        $this->assertStringContainsString('0/100 — Low', $tester->getDisplay());
-        $this->assertStringNotContainsString('Affected flows:', $tester->getDisplay());
-        $this->assertStringNotContainsString('Semantic impact:', $tester->getDisplay());
-        $this->assertStringContainsString('Git history:', $tester->getDisplay());
-        $this->assertStringContainsString('src/Example.php', $tester->getDisplay());
-        $this->assertStringContainsString('commits: 1', $tester->getDisplay());
+        $this->assertStringNotContainsString('Risk score:', $tester->getDisplay());
+        $this->assertStringNotContainsString('Git history:', $tester->getDisplay());
+        $this->assertStringNotContainsString('M src/Example.php', $tester->getDisplay());
     }
 
     public function testJsonOutputExposesDiffData(): void

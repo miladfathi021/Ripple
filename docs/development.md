@@ -33,7 +33,8 @@ Temporary Git repositories used in tests live under the system temp directory, n
 
 ```text
 bin/ripple                 CLI entry
-src/AI/                    Provider interface, NullAIProvider, explanations, test recommendations
+src/AI/                    Provider interface, NullAIProvider, OpenAIProvider, CodeCraftProvider, explanations, test recommendations
+src/AI/Http/               Minimal HTTP client used only by AI providers
 src/Analysis/              Runner, AST, index, graph, impact, risk, flows, semantics, PHPUnit impact
 src/Analysis/Semantics/Laravel/  Optional Laravel AST adapter
 src/CLI/                   Symfony command + application factory
@@ -84,7 +85,18 @@ Return `AIResponse::generated($text)` or `AIResponse::none()`. Throw `AIProvider
 
 Do not put HTTP, API keys, or vendor SDKs in the deterministic layers. Request builders already serialize analysis facts; providers should not parse the repository.
 
-`ApplicationFactory` currently constructs `NullAIProvider` for all three AI services.
+`ApplicationFactory` constructs `ConfiguredAIProvider`, which resolves `NullAIProvider`, `OpenAIProvider`, or `CodeCraftProvider` only when `--ai` actually calls `generate()`.
+
+API keys come from `RIPPLE_AI_API_KEY`, never from `ripple.json`. For local development, copy `.env.example` to `.env` (gitignored). `.env` fills missing environment variables only; a key already set in the process wins. PHPUnit uses `FakeAIHttpClient`; do not make live OpenAI or CodeCraft calls in CI.
+
+Optional local smoke test (not part of `composer test`):
+
+```bash
+cp .env.example .env
+# set RIPPLE_AI_API_KEY in .env, or:
+export RIPPLE_AI_API_KEY="..."
+./bin/ripple analyze --ai
+```
 
 ## Conventions
 

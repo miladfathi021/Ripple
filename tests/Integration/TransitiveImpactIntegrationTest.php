@@ -22,43 +22,13 @@ final class TransitiveImpactIntegrationTest extends TestCase
 
         $this->assertSame(Command::SUCCESS, $statusCode);
         $display = $tester->getDisplay();
-        $this->assertStringContainsString('Changed symbols:', $display);
-        $this->assertStringContainsString('ReservationService::updateStatus()', $display);
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Direct impact:
-
-  AuditService::record()
-    ← method_call
-
-  PaymentService::validate()
-    ← method_call
-TEXT,
-            $display,
-        );
-        $this->assertStringContainsString(
-            <<<'TEXT'
-Blast radius:
-  Depth 1:
-    AuditService::record()
-    PaymentService::validate()
-
-  Depth 2:
-    NotificationService::send()
-    PaymentRepository::update()
-TEXT,
-            $display,
-        );
+        $this->assertStringContainsString('Ripple Analysis', $display);
+        $this->assertStringContainsString('Blast radius: 4 symbols', $display);
+        $this->assertStringContainsString('Changed files: 1', $display);
+        $this->assertStringNotContainsString('Changed symbols:', $display);
+        $this->assertStringNotContainsString('Direct impact:', $display);
         $this->assertStringNotContainsString('UnusedService', $display);
-        $this->assertMatchesRegularExpression(
-            '/Direct impact:.*Blast radius:/s',
-            $display,
-        );
-        preg_match('/Direct impact:(.*)Blast radius:/s', $display, $sections);
-        $this->assertArrayHasKey(1, $sections);
-        $this->assertStringNotContainsString('PaymentRepository::update', $sections[1]);
-        $this->assertStringNotContainsString('NotificationService::send', $sections[1]);
-        $this->assertStringNotContainsString('UnusedService', $sections[1]);
+        $this->assertStringNotContainsString('Depth 1:', $display);
     }
 
     public function testJsonKeepsDirectImpactAndBlastRadiusSeparate(): void

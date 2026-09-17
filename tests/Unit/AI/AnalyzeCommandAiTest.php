@@ -335,7 +335,8 @@ final class AnalyzeCommandAiTest extends TestCase
         $repository->write('ripple.json', <<<'JSON'
 {
   "ai": {
-    "enabled": true
+    "enabled": true,
+    "provider": "openai"
   }
 }
 JSON);

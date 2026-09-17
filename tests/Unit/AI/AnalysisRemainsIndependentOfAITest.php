@@ -59,10 +59,20 @@ final class AnalysisRemainsIndependentOfAITest extends TestCase
                     $path . ' must not depend on the AI layer.',
                 );
             }
-            $this->assertDoesNotMatchRegularExpression(
-                '/OpenAI|Anthropic|Gemini/',
+        $this->assertDoesNotMatchRegularExpression(
+                '/OpenAI|Anthropic|Gemini|CodeCraft/',
                 $contents,
                 $path . ' must not mention a concrete AI vendor.',
+            );
+            $this->assertStringNotContainsString(
+                'api.openai.com',
+                $contents,
+                $path . ' must not call an AI vendor.',
+            );
+            $this->assertStringNotContainsString(
+                'codecraftapi.com',
+                $contents,
+                $path . ' must not call an AI vendor.',
             );
         }
     }
@@ -87,7 +97,9 @@ final class AnalysisRemainsIndependentOfAITest extends TestCase
         $repository->write('ripple.json', <<<'JSON'
 {
   "ai": {
-    "enabled": true
+    "enabled": true,
+    "provider": "openai",
+    "model": "test-model"
   }
 }
 JSON);

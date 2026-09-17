@@ -26,10 +26,10 @@ final class GitHistoryIntegrationTest extends TestCase
 
         $textStatus = $tester->execute(['--format' => 'text']);
         $this->assertSame(Command::SUCCESS, $textStatus);
-        $this->assertStringContainsString('Git history:', $tester->getDisplay());
-        $this->assertStringContainsString('src/Example.php', $tester->getDisplay());
-        $this->assertStringContainsString('commits: 2', $tester->getDisplay());
-        $this->assertStringContainsString('0/100 — Low', $tester->getDisplay());
+        $this->assertStringContainsString('Ripple Analysis', $tester->getDisplay());
+        $this->assertStringContainsString('Risk: 0 / 100 (Low)', $tester->getDisplay());
+        $this->assertStringContainsString('Changed files: 1', $tester->getDisplay());
+        $this->assertStringNotContainsString('Git history:', $tester->getDisplay());
         $this->assertStringNotContainsString('this file will break', $tester->getDisplay());
 
         $jsonStatus = $tester->execute(['--format' => 'json']);
