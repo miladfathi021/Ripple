@@ -1,0 +1,187 @@
+name: Ripple
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  analyze:
+    name: Analyze pull request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Present pull request as a working tree diff
+        run: |
+          git reset --mixed "${{ github.event.pull_request.base.sha }}"
+          git ls-files -z --others --exclude-standard \
+            | git -c advice.addEmptyPathspec=false add --intent-to-add --pathspec-from-file=- --pathspec-file-nul
+
+      - name: Build Ripple image
+        run: docker build -t ripple:ci .
+
+      - name: Run Ripple
+        run: |
+          mkdir -p ripple-out
+          docker run --rm \
+            --network none \
+            -e GIT_CONFIG_COUNT=1 \
+            -e GIT_CONFIG_KEY_0=safe.directory \
+            -e GIT_CONFIG_VALUE_0=/workspace \
+            -e GIT_OPTIONAL_LOCKS=0 \
+            -v "${GITHUB_WORKSPACE}:/workspace:ro" \
+            -v "${GITHUB_WORKSPACE}/ripple-out:/out" \
+            -w /workspace \
+            ripple:ci \
+            analyze --format=json --comment-file=/out/ripple-comment.md \
+            > ripple-result.json
+
+      - name: Write job summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          summary_path = os.environ["GITHUB_STEP_SUMMARY"]
+          result_path = pathlib.Path("ripple-result.json")
+
+          def write(text: str) -> None:
+              with open(summary_path, "a", encoding="utf-8") as handle:
+                  handle.write(text)
+
+          write("🌊 Ripple\n\n")
+
+          if not result_path.is_file() or result_path.stat().st_size == 0:
+              write("Analysis failure: Ripple did not produce `ripple-result.json`.\n")
+              sys.exit(0)
+
+          try:
+              payload = json.loads(result_path.read_text(encoding="utf-8"))
+          except json.JSONDecodeError:
+              write("Analysis failure: `ripple-result.json` was not valid JSON.\n")
+              sys.exit(0)
+
+          if payload.get("status") != "ok":
+              write("Analysis failure.\n\n")
+              write("```\n")
+              write(str(payload.get("message", "Unknown error")))
+              write("\n```\n")
+              sys.exit(0)
+
+          changed_symbols = payload.get("changed_symbols") or []
+          blast_radius = payload.get("blast_radius") or []
+          risk_score = payload.get("risk_score") or {}
+          score = risk_score.get("score", 0)
+          level = str(risk_score.get("level", "low")).upper()
+
+          write("Analysis completed.\n\n")
+          write("Result:\n")
+          write(f"- Changed symbols: {len(changed_symbols)}\n")
+          write(f"- Blast radius: {len(blast_radius)}\n")
+          write(f"- Risk score: {score}\n")
+          write(f"- Risk level: {level}\n\n")
+          write("JSON result generated:\n")
+          write("`ripple-result.json`\n")
+          PY
+
+      - name: Upload analysis artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ripple-analysis
+          path: |
+            ripple-result.json
+            ripple-out/ripple-comment.md
+          if-no-files-found: error
+
+  comment:
+    name: Post pull request comment
+    needs: analyze
+    if: always() && contains(fromJSON('["success", "failure"]'), needs.analyze.result)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ripple-analysis
+          path: artifact
+
+      - name: Post pull request comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- ripple-analysis -->';
+            const commentPath = 'artifact/ripple-out/ripple-comment.md';
+            const resultPath = 'artifact/ripple-result.json';
+
+            try {
+              if (!fs.existsSync(commentPath)) {
+                core.setFailed('PR comment failure: Ripple comment file was not found in the analysis artifact.');
+                return;
+              }
+
+              let body = fs.readFileSync(commentPath, 'utf8');
+              if (!body.includes(marker)) {
+                body = marker + '\n' + body;
+              }
+
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                per_page: 100,
+              });
+              const matches = comments.filter((comment) =>
+                typeof comment.body === 'string' && comment.body.includes(marker)
+              );
+              matches.sort((left, right) => {
+                const byCreatedAt = String(left.created_at).localeCompare(String(right.created_at));
+                if (byCreatedAt !== 0) {
+                  return byCreatedAt;
+                }
+                return Number(left.id) - Number(right.id);
+              });
+
+              if (matches.length === 0) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body,
+                });
+                core.info('Created the Ripple pull request comment.');
+                return;
+              }
+
+              const canonical = matches[0];
+              if (matches.length > 1) {
+                core.warning(
+                  'Found ' + matches.length + ' Ripple comments; updating the oldest (id ' + canonical.id + ') and leaving the others unchanged.'
+                );
+              }
+
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: canonical.id,
+                body,
+              });
+              core.info('Updated the existing Ripple pull request comment.');
+            } catch (error) {
+              if (fs.existsSync(resultPath)) {
+                core.info('Analysis result artifact is unchanged at ' + resultPath + '.');
+              }
+              core.setFailed('PR comment failure: ' + (error instanceof Error ? error.message : String(error)));
+            }

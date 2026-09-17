@@ -13,8 +13,9 @@ final class ReportFormatterFactory
         return match ($format) {
             'text' => new TextReportFormatter(),
             'json' => new JsonReportFormatter(),
+            'comment' => new PullRequestCommentFormatter(),
             default => throw new InvalidArgumentException(
-                sprintf('Unsupported format "%s". Use "text" or "json".', $format),
+                sprintf('Unsupported format "%s". Use "text", "json", or "comment".', $format),
             ),
         };
     }

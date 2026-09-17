@@ -3,3 +3,5 @@
 .phpunit.result.cache
 composer.phar
 .DS_Store
+/ripple-result.json
+/ripple-out/
