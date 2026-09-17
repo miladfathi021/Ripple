@@ -163,6 +163,10 @@ JSON);
 
         $example = $this->gitCheckIgnore($root, '.env.example');
         $this->assertSame('!.env.example', $this->gitIgnorePattern($example['stdout']));
+
+        $tracked = $this->git($root, ['ls-files', '--error-unmatch', '--', '.env.example']);
+        $this->assertSame(0, $tracked['exitCode']);
+        $this->assertSame('.env.example', trim($tracked['stdout']));
     }
 
     /**
@@ -187,9 +191,18 @@ JSON);
      */
     private function gitCheckIgnore(string $root, string $path): array
     {
+        return $this->git($root, ['check-ignore', '--no-index', '-v', '--', $path]);
+    }
+
+    /**
+     * @param list<string> $arguments
+     * @return array{exitCode: int, stdout: string}
+     */
+    private function git(string $root, array $arguments): array
+    {
         $pipes = [];
         $process = proc_open(
-            ['git', 'check-ignore', '-v', '--', $path],
+            array_merge(['git'], $arguments),
             [
                 0 => ['pipe', 'r'],
                 1 => ['pipe', 'w'],
