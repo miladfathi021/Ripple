@@ -7,6 +7,7 @@ namespace Ripple\Reporting;
 use Ripple\Analysis\AnalysisResult;
 use Ripple\AI\Explanation\AIPrExplanation;
 use Ripple\AI\Explanation\AIRiskExplanation;
+use Ripple\AI\Testing\AITestRecommendation;
 use Ripple\Analysis\ChangedSymbols\ChangedSymbol;
 use Ripple\Analysis\ChangedSymbols\ChangedSymbolResult;
 use Ripple\Analysis\ChangedSymbols\UnmappedFileLines;
@@ -43,6 +44,7 @@ final class JsonReportFormatter implements ReportFormatter
         AnalysisResult $result,
         ?AIPrExplanation $explanation = null,
         ?AIRiskExplanation $riskExplanation = null,
+        ?AITestRecommendation $testRecommendation = null,
     ): string
     {
         $payload = [
@@ -129,6 +131,13 @@ final class JsonReportFormatter implements ReportFormatter
             $payload['ai_risk_explanation'] = [
                 'generated' => true,
                 'text' => $riskExplanation->text,
+            ];
+        }
+
+        if ($testRecommendation !== null && $testRecommendation->wasGenerated()) {
+            $payload['ai_test_recommendations'] = [
+                'generated' => true,
+                'text' => $testRecommendation->text,
             ];
         }
 

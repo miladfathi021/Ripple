@@ -7,6 +7,7 @@ namespace Ripple\Reporting;
 use Ripple\Analysis\AnalysisResult;
 use Ripple\AI\Explanation\AIPrExplanation;
 use Ripple\AI\Explanation\AIRiskExplanation;
+use Ripple\AI\Testing\AITestRecommendation;
 use Ripple\Analysis\AST\SymbolType;
 use Ripple\Analysis\ChangedSymbols\ChangedSymbol;
 use Ripple\Analysis\ChangedSymbols\ChangedSymbolResult;
@@ -40,6 +41,7 @@ final class TextReportFormatter implements ReportFormatter
         AnalysisResult $result,
         ?AIPrExplanation $explanation = null,
         ?AIRiskExplanation $riskExplanation = null,
+        ?AITestRecommendation $testRecommendation = null,
     ): string
     {
         if (!$result->isSuccessful()) {
@@ -79,6 +81,7 @@ final class TextReportFormatter implements ReportFormatter
             $this->reverseDependencySection($result->reverseGraph),
             $this->aiExplanationSection($explanation),
             $this->aiRiskExplanationSection($riskExplanation),
+            $this->aiTestRecommendationSection($testRecommendation),
         ));
     }
 
@@ -95,6 +98,23 @@ final class TextReportFormatter implements ReportFormatter
             '',
             'AI risk explanation:',
             '  ' . $explanation->text,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function aiTestRecommendationSection(?AITestRecommendation $recommendation): array
+    {
+        if ($recommendation === null || !$recommendation->wasGenerated()) {
+            return [];
+        }
+
+        return [
+            '',
+            'AI test recommendations',
+            '────────────────────────',
+            $recommendation->text,
         ];
     }
 

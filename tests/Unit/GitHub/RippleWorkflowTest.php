@@ -25,6 +25,15 @@ final class RippleWorkflowTest extends TestCase
         $this->assertStringNotContainsString('secrets.', $yaml);
         $this->assertDoesNotMatchRegularExpression('/openai|anthropic|gemini|api[_-]?key/i', $yaml);
         $this->assertStringNotContainsString('--ai', $yaml);
+        $this->assertStringContainsString('persist-credentials: false', $yaml);
+        $this->assertStringContainsString('--network none', $yaml);
+        $this->assertStringContainsString('${GITHUB_WORKSPACE}:/workspace:ro', $yaml);
+        $this->assertStringNotContainsString('/var/run/docker.sock', $yaml);
+        $this->assertStringNotContainsString('--privileged', $yaml);
+        $this->assertStringNotContainsString('docker.sock', $yaml);
+        $this->assertStringContainsString('RIPPLE_BASE_SHA: ${{ github.event.pull_request.base.sha }}', $yaml);
+        $this->assertStringContainsString('git reset --mixed "$RIPPLE_BASE_SHA"', $yaml);
+        $this->assertStringNotContainsString('git reset --mixed "${{ github.event.pull_request.base.sha }}"', $yaml);
     }
 
     public function testWorkflowReusesTheOldestRippleComment(): void

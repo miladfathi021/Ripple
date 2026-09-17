@@ -7,6 +7,7 @@ namespace Ripple\Reporting;
 use Ripple\Analysis\AnalysisResult;
 use Ripple\AI\Explanation\AIPrExplanation;
 use Ripple\AI\Explanation\AIRiskExplanation;
+use Ripple\AI\Testing\AITestRecommendation;
 
 interface ReportFormatter
 {
@@ -14,5 +15,6 @@ interface ReportFormatter
         AnalysisResult $result,
         ?AIPrExplanation $explanation = null,
         ?AIRiskExplanation $riskExplanation = null,
+        ?AITestRecommendation $testRecommendation = null,
     ): string;
 }

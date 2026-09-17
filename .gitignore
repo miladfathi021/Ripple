@@ -3,5 +3,16 @@
 .phpunit.result.cache
 composer.phar
 .DS_Store
+Thumbs.db
 /ripple-result.json
 /ripple-out/
+/.idea/
+/.vscode/
+.env
+.env.*
+!.env.example
+/coverage/
+/build/
+.php-cs-fixer.cache
+*.swp
+*~

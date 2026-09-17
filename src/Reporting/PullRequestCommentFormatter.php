@@ -8,6 +8,7 @@ use Ripple\Analysis\AnalysisResult;
 use Ripple\Analysis\AST\SymbolType;
 use Ripple\AI\Explanation\AIPrExplanation;
 use Ripple\AI\Explanation\AIRiskExplanation;
+use Ripple\AI\Testing\AITestRecommendation;
 use Ripple\Analysis\ChangedSymbols\ChangedSymbol;
 use Ripple\Analysis\ChangedSymbols\ChangedSymbolResult;
 use Ripple\Analysis\Flow\AffectedFlowResult;
@@ -37,15 +38,17 @@ final class PullRequestCommentFormatter implements ReportFormatter
         AnalysisResult $result,
         ?AIPrExplanation $explanation = null,
         ?AIRiskExplanation $riskExplanation = null,
+        ?AITestRecommendation $testRecommendation = null,
     ): string
     {
-        return self::MARKER . "\n" . $this->body($result, $explanation, $riskExplanation);
+        return self::MARKER . "\n" . $this->body($result, $explanation, $riskExplanation, $testRecommendation);
     }
 
     private function body(
         AnalysisResult $result,
         ?AIPrExplanation $explanation,
         ?AIRiskExplanation $riskExplanation,
+        ?AITestRecommendation $testRecommendation,
     ): string
     {
         if (!$result->isSuccessful()) {
@@ -73,6 +76,7 @@ final class PullRequestCommentFormatter implements ReportFormatter
             $this->section('Blast radius', $this->blastRadiusLines($result->blastRadius)),
             $this->section('Affected flows', $this->affectedFlowLines($result->affectedFlows)),
             $this->section('Test impact', $this->testImpactLines($result->testImpact)),
+            $this->testRecommendationSection($testRecommendation),
             $this->section('Historical churn', $this->churnLines($result->churn)),
             $this->section('⚠ Risk factors', $this->riskFactorLines($result->riskFactors)),
             $this->aiExplanationSection($explanation),
@@ -109,6 +113,18 @@ final class PullRequestCommentFormatter implements ReportFormatter
         }
 
         return $this->section('AI explanation', [$explanation->text]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function testRecommendationSection(?AITestRecommendation $recommendation): array
+    {
+        if ($recommendation === null || !$recommendation->wasGenerated()) {
+            return [];
+        }
+
+        return $this->section('Test recommendations', [$recommendation->text]);
     }
 
     private function riskLine(?RiskScoreResult $riskScore): string

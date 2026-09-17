@@ -8,6 +8,7 @@ use Ripple\AI\AIConfigurationLoader;
 use Ripple\AI\Explanation\AIPrExplanationService;
 use Ripple\AI\Explanation\AIRiskExplanationService;
 use Ripple\AI\NullAIProvider;
+use Ripple\AI\Testing\AITestRecommendationService;
 use Ripple\Analysis\AnalysisRunner;
 use Ripple\Analysis\Index\RepositoryIndexHolder;
 use Ripple\Analysis\Semantics\SemanticImpactAnalyzer;
@@ -20,6 +21,7 @@ final class ApplicationFactory
     private readonly AnalysisRunner $analysisRunner;
     private readonly AIPrExplanationService $explanationService;
     private readonly AIRiskExplanationService $riskExplanationService;
+    private readonly AITestRecommendationService $testRecommendationService;
 
     public function __construct(
         ?AnalysisRunner $analysisRunner = null,
@@ -28,11 +30,13 @@ final class ApplicationFactory
         private readonly AIConfigurationLoader $aiConfigurationLoader = new AIConfigurationLoader(),
         private readonly string $workingDirectory = '.',
         ?AIRiskExplanationService $riskExplanationService = null,
+        ?AITestRecommendationService $testRecommendationService = null,
     ) {
         $this->analysisRunner = $analysisRunner ?? self::runnerForWorkingDirectory($workingDirectory);
         $provider = new NullAIProvider();
         $this->explanationService = $explanationService ?? new AIPrExplanationService($provider);
         $this->riskExplanationService = $riskExplanationService ?? new AIRiskExplanationService($provider);
+        $this->testRecommendationService = $testRecommendationService ?? new AITestRecommendationService($provider);
     }
 
     public static function forWorkingDirectory(string $workingDirectory): self
@@ -66,6 +70,7 @@ final class ApplicationFactory
             $this->riskExplanationService,
             $this->aiConfigurationLoader,
             $this->workingDirectory,
+            $this->testRecommendationService,
         ));
         $application->setDefaultCommand('analyze');
 

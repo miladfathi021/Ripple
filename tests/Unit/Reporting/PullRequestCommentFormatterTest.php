@@ -31,6 +31,7 @@ use Ripple\Analysis\Tests\TestSymbol;
 use Ripple\Analysis\Tests\TestSymbolType;
 use Ripple\AI\Explanation\AIPrExplanation;
 use Ripple\AI\Explanation\AIRiskExplanation;
+use Ripple\AI\Testing\AITestRecommendation;
 use Ripple\Git\DiffResult;
 use Ripple\Git\History\ChurnResult;
 use Ripple\Git\History\FileChurn;
@@ -273,6 +274,35 @@ TEXT,
         $this->assertStringNotContainsString('AI explanation', $formatter->format($result, AIPrExplanation::none()));
     }
 
+    public function testGeneratedTestRecommendationAppearsAfterTestImpact(): void
+    {
+        $result = new AnalysisResult(status: 'ok', diff: new DiffResult([]));
+        $output = (new PullRequestCommentFormatter())->format(
+            $result,
+            null,
+            null,
+            AITestRecommendation::generated('Consider updating ReservationServiceTest::testUpdateStatus().'),
+        );
+
+        $this->assertStringContainsString("<!-- ripple-analysis -->\n", $output);
+        $this->assertStringContainsString("Test impact\n────────────────────────\nNone\n\nTest recommendations\n────────────────────────\nConsider updating ReservationServiceTest::testUpdateStatus().\n", $output);
+        $this->assertStringContainsString("Historical churn\n────────────────────────\nNone\n", $output);
+        $this->assertStringContainsString('See full analysis in the workflow artifact.', $output);
+    }
+
+    public function testMissingOrEmptyTestRecommendationDoesNotAddASection(): void
+    {
+        $formatter = new PullRequestCommentFormatter();
+        $result = new AnalysisResult(status: 'ok', diff: new DiffResult([]));
+
+        $this->assertStringNotContainsString('Test recommendations', $formatter->format($result));
+        $this->assertStringNotContainsString(
+            'Test recommendations',
+            $formatter->format($result, null, null, AITestRecommendation::none()),
+        );
+        $this->assertStringStartsWith("<!-- ripple-analysis -->\n", $formatter->format($result));
+    }
+
     public function testRiskExplanationAppearsOnlyWhenGenerated(): void
     {
         $formatter = new PullRequestCommentFormatter();
@@ -295,6 +325,7 @@ TEXT,
         $this->assertStringNotContainsString('AIProvider', $source);
         $this->assertStringNotContainsString('AIPrExplanationService', $source);
         $this->assertStringNotContainsString('AIRiskExplanationService', $source);
+        $this->assertStringNotContainsString('AITestRecommendationService', $source);
     }
 
     public function testFailedAnalysisDoesNotInventARiskScore(): void

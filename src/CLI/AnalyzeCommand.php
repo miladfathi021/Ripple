@@ -12,6 +12,8 @@ use Ripple\AI\Explanation\AIPrExplanationService;
 use Ripple\AI\Explanation\AIRiskExplanation;
 use Ripple\AI\Explanation\AIRiskExplanationService;
 use Ripple\AI\NullAIProvider;
+use Ripple\AI\Testing\AITestRecommendation;
+use Ripple\AI\Testing\AITestRecommendationService;
 use Ripple\Analysis\AnalysisResult;
 use Ripple\Analysis\AnalysisRunner;
 use Ripple\Reporting\PullRequestCommentFormatter;
@@ -36,6 +38,7 @@ final class AnalyzeCommand extends Command
         private readonly AIRiskExplanationService $riskExplanationService = new AIRiskExplanationService(new NullAIProvider()),
         private readonly AIConfigurationLoader $aiConfigurationLoader = new AIConfigurationLoader(),
         private readonly string $workingDirectory = '.',
+        private readonly AITestRecommendationService $testRecommendationService = new AITestRecommendationService(new NullAIProvider()),
     ) {
         parent::__construct();
     }
@@ -59,7 +62,7 @@ final class AnalyzeCommand extends Command
             'ai',
             null,
             InputOption::VALUE_NONE,
-            'Request an AI explanation of the deterministic analysis result',
+            'Request optional AI explanations and test recommendations of the deterministic analysis result',
         );
     }
 
@@ -70,20 +73,20 @@ final class AnalyzeCommand extends Command
         try {
             $formatter = $this->reportFormatterFactory->forFormat($format);
         } catch (InvalidArgumentException $exception) {
-            $output->writeln('<error>' . $exception->getMessage() . '</error>');
+            $this->writeError($output, $exception->getMessage());
 
             return Command::INVALID;
         }
 
         $result = $this->analysisRunner->run();
-        [$explanation, $riskExplanation] = $this->explanationsIfRequested($input, $output, $result);
-        $output->writeln($formatter->format($result, $explanation, $riskExplanation));
+        [$explanation, $riskExplanation, $testRecommendation] = $this->explanationsIfRequested($input, $output, $result);
+        $output->writeln($formatter->format($result, $explanation, $riskExplanation, $testRecommendation));
 
         $commentFile = $input->getOption('comment-file');
         if (is_string($commentFile) && $commentFile !== '') {
             $written = @file_put_contents(
                 $commentFile,
-                (new PullRequestCommentFormatter())->format($result, $explanation, $riskExplanation) . "\n",
+                (new PullRequestCommentFormatter())->format($result, $explanation, $riskExplanation, $testRecommendation) . "\n",
             );
             if ($written === false) {
                 $this->writeError($output, 'Ripple could not write the comment file.');
@@ -94,7 +97,7 @@ final class AnalyzeCommand extends Command
     }
 
     /**
-     * @return array{0: ?AIPrExplanation, 1: ?AIRiskExplanation}
+     * @return array{0: ?AIPrExplanation, 1: ?AIRiskExplanation, 2: ?AITestRecommendation}
      */
     private function explanationsIfRequested(
         InputInterface $input,
@@ -102,7 +105,7 @@ final class AnalyzeCommand extends Command
         AnalysisResult $result,
     ): array {
         if ($input->getOption('ai') !== true || !$result->isSuccessful()) {
-            return [null, null];
+            return [null, null, null];
         }
 
         try {
@@ -112,11 +115,11 @@ final class AnalyzeCommand extends Command
         } catch (AIProviderException $exception) {
             $this->writeError($output, 'AI explanation failed: ' . $exception->getMessage());
 
-            return [null, null];
+            return [null, null, null];
         }
 
         if (!$configuration->isEnabled()) {
-            return [null, null];
+            return [null, null, null];
         }
 
         $pr = $this->tryExplain(
@@ -127,10 +130,15 @@ final class AnalyzeCommand extends Command
             $output,
             fn (): AIRiskExplanation => $this->riskExplanationService->explain($result),
         );
+        $tests = $this->tryExplain(
+            $output,
+            fn (): AITestRecommendation => $this->testRecommendationService->recommend($result),
+        );
 
         return [
             $pr instanceof AIPrExplanation && $pr->wasGenerated() ? $pr : null,
             $risk instanceof AIRiskExplanation && $risk->wasGenerated() ? $risk : null,
+            $tests instanceof AITestRecommendation && $tests->wasGenerated() ? $tests : null,
         ];
     }
 

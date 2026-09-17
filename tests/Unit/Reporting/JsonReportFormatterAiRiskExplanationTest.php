@@ -78,5 +78,7 @@ final class JsonReportFormatterAiRiskExplanationTest extends TestCase
 
         $this->assertArrayNotHasKey('ai_risk_explanation', $payload);
         $this->assertArrayNotHasKey('ai_explanation', $payload);
+        $this->assertArrayNotHasKey('ai_test_recommendations', $payload);
+        $this->assertArrayNotHasKey('ai_test_recommendations', $payload);
     }
 }

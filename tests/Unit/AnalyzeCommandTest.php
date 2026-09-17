@@ -94,6 +94,7 @@ final class AnalyzeCommandTest extends TestCase
         $this->assertArrayNotHasKey('ai_explanation', $payload);
         $this->assertArrayNotHasKey('ai', $payload);
         $this->assertArrayNotHasKey('ai_risk_explanation', $payload);
+        $this->assertArrayNotHasKey('ai_test_recommendations', $payload);
     }
 
     public function testFailsOutsideAGitRepository(): void
@@ -157,7 +158,7 @@ final class AnalyzeCommandTest extends TestCase
                 '--format' => 'json',
                 '--comment-file' => $blocked,
             ],
-            ['capture_stderr' => true],
+            ['capture_stderr_separately' => true],
         );
 
         $this->assertSame(Command::SUCCESS, $statusCode);
@@ -165,7 +166,24 @@ final class AnalyzeCommandTest extends TestCase
         $this->assertSame('ok', $payload['status']);
         $this->assertArrayHasKey('risk_score', $payload);
         $this->assertStringNotContainsString('Ripple could not write the comment file.', $tester->getDisplay());
+        $this->assertStringContainsString('Ripple could not write the comment file.', $tester->getErrorOutput());
         @rmdir($blocked);
+    }
+
+    public function testInvalidFormatWritesToStderrWithoutStdoutNoise(): void
+    {
+        $tester = $this->commandTester($this->repositoryWithChange());
+        $statusCode = $tester->execute(
+            ['--format' => 'xml'],
+            ['capture_stderr_separately' => true],
+        );
+
+        $this->assertSame(Command::INVALID, $statusCode);
+        $this->assertSame('', trim($tester->getDisplay()));
+        $this->assertStringContainsString(
+            'Unsupported format "xml". Use "text", "json", or "comment".',
+            $tester->getErrorOutput(),
+        );
     }
 
     private function repositoryWithChange(): string

@@ -1,8 +1,32 @@
 {
     "name": "ripple/ripple",
-    "description": "AI-assisted code change impact analyzer",
+    "description": "A code change impact analyzer that helps developers understand how far their code changes can travel before merging.",
     "type": "project",
     "license": "MIT",
+    "keywords": [
+        "php",
+        "static-analysis",
+        "code-analysis",
+        "dependency-graph",
+        "impact-analysis",
+        "github",
+        "pull-request",
+        "developer-tools",
+        "laravel",
+        "risk-analysis",
+        "code-quality"
+    ],
+    "authors": [
+        {
+            "name": "Milad Fathi",
+            "email": "miladfathi021@gmail.com"
+        }
+    ],
+    "homepage": "https://github.com/miladfathi021/Ripple",
+    "support": {
+        "issues": "https://github.com/miladfathi021/Ripple/issues",
+        "source": "https://github.com/miladfathi021/Ripple"
+    },
     "require": {
         "php": "^8.3",
         "nikic/php-parser": "^5.4",

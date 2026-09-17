@@ -135,6 +135,42 @@ final class GitDiffParserTest extends TestCase
         $this->assertSame([], $result->files);
     }
 
+    public function testParsesQuotedPathsWithSpaces(): void
+    {
+        $diff = <<<'DIFF'
+diff --git "a/src/My File.php" "b/src/My File.php"
+index 1111111..2222222 100644
+--- "a/src/My File.php"
++++ "b/src/My File.php"
+@@ -1,1 +1,1 @@
+-old
++new
+DIFF;
+
+        $file = (new GitDiffParser())->parse($diff)->files[0];
+
+        $this->assertSame('src/My File.php', $file->path);
+        $this->assertSame(ChangeType::Modified, $file->changeType);
+        $this->assertSame([1], $file->addedLines);
+        $this->assertSame([1], $file->deletedLines);
+    }
+
+    public function testParsesBinaryFilesWithoutInventingLineNumbers(): void
+    {
+        $diff = <<<'DIFF'
+diff --git a/assets/logo.png b/assets/logo.png
+index 1111111..2222222 100644
+Binary files a/assets/logo.png and b/assets/logo.png differ
+DIFF;
+
+        $file = (new GitDiffParser())->parse($diff)->files[0];
+
+        $this->assertSame('assets/logo.png', $file->path);
+        $this->assertSame(ChangeType::Modified, $file->changeType);
+        $this->assertSame([], $file->addedLines);
+        $this->assertSame([], $file->deletedLines);
+    }
+
     private function singleFile(string $fixture): ChangedFile
     {
         $result = $this->parseFixture($fixture);

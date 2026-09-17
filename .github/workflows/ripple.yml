@@ -20,8 +20,10 @@ jobs:
           persist-credentials: false
 
       - name: Present pull request as a working tree diff
+        env:
+          RIPPLE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          git reset --mixed "${{ github.event.pull_request.base.sha }}"
+          git reset --mixed "$RIPPLE_BASE_SHA"
           git ls-files -z --others --exclude-standard \
             | git -c advice.addEmptyPathspec=false add --intent-to-add --pathspec-from-file=- --pathspec-file-nul
 

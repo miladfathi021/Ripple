@@ -100,6 +100,22 @@ final class GitRepository
     }
 
     /**
+     * @return array<string, string>
+     */
+    private function processEnvironment(): array
+    {
+        $environment = getenv();
+        if (!is_array($environment)) {
+            $environment = [];
+        }
+
+        $environment['GIT_TERMINAL_PROMPT'] = '0';
+        $environment['GIT_OPTIONAL_LOCKS'] = '0';
+
+        return $environment;
+    }
+
+    /**
      * @param list<string> $arguments
      * @return array{exitCode: int, stdout: string, stderr: string}
      */
@@ -117,6 +133,7 @@ final class GitRepository
             ],
             $pipes,
             $this->workingDirectory,
+            $this->processEnvironment(),
         );
 
         if (!is_resource($process)) {

@@ -77,4 +77,16 @@ final class GitRepositoryTest extends TestCase
         $this->assertStringContainsString('Ripple Test', $output);
         $this->assertStringContainsString("src/Example.php", $output);
     }
+
+    public function testGitInvocationsAreNonInteractiveAndNotShellInterpolated(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 3) . '/src/Git/GitRepository.php');
+
+        $this->assertStringContainsString("array_merge(['git', '-C', \$this->workingDirectory], \$arguments)", $source);
+        $this->assertStringContainsString("\$environment['GIT_TERMINAL_PROMPT'] = '0'", $source);
+        $this->assertStringContainsString("\$environment['GIT_OPTIONAL_LOCKS'] = '0'", $source);
+        $this->assertStringNotContainsString('shell_exec', $source);
+        $this->assertStringNotContainsString('passthru', $source);
+        $this->assertDoesNotMatchRegularExpression('/proc_open\(\s*[\'"]git /', $source);
+    }
 }

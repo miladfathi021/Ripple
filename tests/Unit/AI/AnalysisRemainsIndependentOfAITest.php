@@ -75,6 +75,7 @@ final class AnalysisRemainsIndependentOfAITest extends TestCase
         $this->assertArrayNotHasKey('ai', $payload);
         $this->assertArrayNotHasKey('ai_explanation', $payload);
         $this->assertArrayNotHasKey('ai_risk_explanation', $payload);
+        $this->assertArrayNotHasKey('ai_test_recommendations', $payload);
         $this->assertArrayNotHasKey('explanation', $payload);
         $this->assertArrayHasKey('risk_score', $payload);
         $this->assertArrayHasKey('blast_radius', $payload);
@@ -97,6 +98,7 @@ JSON);
         $this->assertArrayNotHasKey('ai', $payload);
         $this->assertArrayNotHasKey('ai_explanation', $payload);
         $this->assertArrayNotHasKey('ai_risk_explanation', $payload);
+        $this->assertArrayNotHasKey('ai_test_recommendations', $payload);
         $this->assertArrayNotHasKey('explanation', $payload);
         $this->assertSame(0, $payload['risk_score']['score']);
     }
